@@ -1,15 +1,15 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button, Input, RTE, Select } from "..";
-import appwriteService from "../../appwrite/config";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import postService from "../../services/postService";
 
 export default function PostForm({ post }) {
     const { register, handleSubmit, watch, setValue, control, getValues } = useForm({
         defaultValues: {
             title: post?.title || "",
-            slug: post?.$id || "",
+            slug: post?.slug || "",
             content: post?.content || "",
             status: post?.status || "active",
         },
@@ -17,35 +17,29 @@ export default function PostForm({ post }) {
 
     const navigate = useNavigate();
     const userData = useSelector((state) => state.auth.userData);
+    const token = localStorage.getItem("token");
 
     const submit = async (data) => {
-        if (post) {
-            const file = data.image[0] ? await appwriteService.uploadFile(data.image[0]) : null;
+        const formData = new FormData();
+        formData.append("title", data.title);
+        formData.append("slug", data.slug);
+        formData.append("content", data.content);
+        formData.append("status", data.status);
+        formData.append("userId", userData._id || userData.id); // adapt based on backend
+        if (data.image[0]) {
+            formData.append("image", data.image[0]);
+        }
 
-            if (file) {
-                appwriteService.deleteFile(post.featuredImage);
+        try {
+            if (post) {
+                const updatedPost = await postService.updatePost(post._id, formData, token);
+                if (updatedPost) navigate(`/post/${updatedPost._id}`);
+            } else {
+                const createdPost = await postService.createPost(formData, token);
+                if (createdPost) navigate(`/post/${createdPost._id}`);
             }
-
-            const dbPost = await appwriteService.updatePost(post.$id, {
-                ...data,
-                featuredImage: file ? file.$id : undefined,
-            });
-
-            if (dbPost) {
-                navigate(`/post/${dbPost.$id}`);
-            }
-        } else {
-            const file = await appwriteService.uploadFile(data.image[0]);
-
-            if (file) {
-                const fileId = file.$id;
-                data.featuredImage = fileId;
-                const dbPost = await appwriteService.createPost({ ...data, userId: userData.$id });
-
-                if (dbPost) {
-                    navigate(`/post/${dbPost.$id}`);
-                }
-            }
+        } catch (err) {
+            console.error("Error submitting post", err);
         }
     };
 
@@ -60,7 +54,7 @@ export default function PostForm({ post }) {
         return "";
     }, []);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const subscription = watch((value, { name }) => {
             if (name === "title") {
                 setValue("slug", slugTransform(value.title), { shouldValidate: true });
@@ -95,13 +89,13 @@ export default function PostForm({ post }) {
                     label="Featured Image :"
                     type="file"
                     className="mb-4"
-                    accept="image/png, image/jpg, image/jpeg, image/gif"
+                    accept="image/*"
                     {...register("image", { required: !post })}
                 />
-                {post && (
+                {post && post.featuredImageUrl && (
                     <div className="w-full mb-4">
                         <img
-                            src={appwriteService.getFilePreview(post.featuredImage)}
+                            src={post.featuredImageUrl}
                             alt={post.title}
                             className="rounded-lg"
                         />
@@ -113,7 +107,7 @@ export default function PostForm({ post }) {
                     className="mb-4"
                     {...register("status", { required: true })}
                 />
-                <Button  type="submit" bgColor={post ? "bg-green-500" : undefined} className="w-full">
+                <Button type="submit" bgColor={post ? "bg-green-500" : undefined} className="w-full">
                     {post ? "Update" : "Submit"}
                 </Button>
             </div>

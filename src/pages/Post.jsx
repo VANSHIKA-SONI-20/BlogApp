@@ -11,7 +11,11 @@ export default function Post() {
 
   const userData = useSelector((state) => state.auth.userData);
 
-  const isAuthor = post && userData ? post.author === userData._id : false;
+  const isAuthor =
+  post && userData
+    ? post.author?._id === userData._id || post.author === userData._id
+    : false;
+
 
   useEffect(() => {
     if (slug) {
@@ -50,10 +54,11 @@ export default function Post() {
         <div className="w-full flex justify-center mb-4 relative border rounded-xl p-2">
           {post.featuredImage && (
             <img
-              src={post.featuredImage}
-              alt={post.title}
-              className="rounded-xl max-h-[400px] object-cover"
-            />
+  src={`http://localhost:5000${post.featuredImage}`}
+  alt={post.title}
+  className="rounded-xl max-h-[400px] object-cover"
+/>
+
           )}
 
           {isAuthor && (

@@ -7,7 +7,8 @@ function PostCard({ _id, title, featuredImage }) {
       <div className="w-full bg-gray-100 rounded-xl p-4">
         {featuredImage && (
           <div className="w-full justify-center mb-4">
-            <img src={`http://localhost:5000${post.featuredImage}`} alt={title} className="rounded-xl w-full object-cover" />
+            <img src={`http://localhost:5000${featuredImage}`} alt={title} className="rounded-xl w-full object-cover" />
+
           </div>
         )}
         <h2 className="text-xl font-bold">{title}</h2>

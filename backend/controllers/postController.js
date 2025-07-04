@@ -7,6 +7,7 @@ export const createPost = async (req, res) => {
     const { title, slug, content, status, userId } = req.body;
     const featuredImage = req.file ? `/uploads/${req.file.filename}` : "";
 
+
     const post = new Post({
       title,
       slug,
